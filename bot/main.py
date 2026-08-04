@@ -1,4 +1,7 @@
 import logging
+import os
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from telegram.ext import (
     Application,
@@ -31,6 +34,31 @@ def _resolve_ffmpeg_location() -> str:
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
+class _HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"ok")
+
+    def log_message(self, format: str, *args) -> None:  # noqa: A002
+        pass  # silence per-request logging; the bot's own logger is enough
+
+
+def _start_health_check_server() -> None:
+    """Binds a plain HTTP server to $PORT in a background thread.
+
+    This bot does its actual work via Telegram long-polling and has no need
+    for an HTTP server of its own - but Render's Web Service instance type
+    requires something listening on $PORT, or it considers the deploy failed
+    and keeps restarting the container. This just satisfies that check."""
+    port = int(os.getenv("PORT", "10000"))
+    server = HTTPServer(("0.0.0.0", port), _HealthCheckHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    logger.info("Health-check server listening on port %d", port)
+
+
 async def _post_init(application: Application) -> None:
     task_queue: TaskQueue = application.bot_data["task_queue"]
     task_queue.start()
@@ -52,6 +80,8 @@ def main() -> None:
 
     config.download_dir.mkdir(parents=True, exist_ok=True)
     config.weights_dir.mkdir(parents=True, exist_ok=True)
+
+    _start_health_check_server()
 
     application = (
         Application.builder()
