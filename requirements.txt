@@ -1,0 +1,40 @@
+# --- Telegram bot framework ---
+python-telegram-bot==21.4
+
+# --- Media downloading (YouTube / SoundCloud / Instagram) ---
+yt-dlp>=2024.8.6
+imageio-ffmpeg==0.5.1
+
+# --- Spotify metadata + mp3 tagging ---
+spotipy==2.24.0
+mutagen==1.47.0
+
+# --- Config ---
+python-dotenv==1.0.1
+
+# --- Image upscaling (Real-ESRGAN, CPU) ---
+# IMPORTANT: install the CPU-only torch/torchvision wheels FIRST, otherwise
+# plain `pip install torch` pulls the ~2GB CUDA build, which will not fit
+# on a small Render disk and is completely unnecessary since we run on CPU:
+#
+#   pip install torch==2.0.1+cpu torchvision==0.15.2+cpu \
+#       --index-url https://download.pytorch.org/whl/cpu
+#
+# Then install the rest of this file normally:
+#
+#   pip install -r requirements.txt
+#
+# VERSION PIN IS NOT OPTIONAL: basicsr==1.4.2 imports
+# `torchvision.transforms.functional_tensor`, a module that was REMOVED in
+# torchvision>=0.17. Installing a newer torchvision breaks image upscaling
+# with an ImportError at runtime. Keep torchvision pinned to 0.15.2 unless
+# you also patch basicsr.
+torch==2.0.1
+torchvision==0.15.2
+numpy==1.24.4
+opencv-python-headless==4.10.0.84
+Pillow==10.4.0
+basicsr==1.4.2
+facexlib==0.3.0
+gfpgan==1.3.8
+realesrgan==0.3.0
